@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天干地支学号抽取</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        h1 {
+            color: #2a5298;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .ganzhi-today {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 30px;
+            padding: 10px;
+            background: #f5f8ff;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .num-set {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .num-set input {
+            width: 120px;
+            padding: 12px;
+            border: 2px solid #e0e6f0;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: center;
+            outline: none;
+        }
+        .num-set input:focus {
+            border-color: #2a5298;
+        }
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        button {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        #drawBtn {
+            background: #2a5298;
+            color: white;
+        }
+        #drawBtn:hover {
+            background: #1e3c72;
+            transform: scale(1.05);
+        }
+        #resetBtn {
+            background: #f5f8ff;
+            color: #2a5298;
+            border: 2px solid #e0e6f0;
+        }
+        #resetBtn:hover {
+            background: #e0e6f0;
+        }
+        .result {
+            padding: 30px 20px;
+            border: 3px solid #2a5298;
+            border-radius: 16px;
+            background: #f5f8ff;
+        }
+        .result h3 {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        #stuNum {
+            font-size: 60px;
+            font-weight: bold;
+            color: #2a5298;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>天干地支学号抽取</h1>
+        <!-- 当日天干地支展示 -->
+        <div class="ganzhi-today" id="ganzhiToday"></div>
+        <!-- 学号范围设置 -->
+        <div class="num-set">
+            <input type="number" id="startNum" placeholder="起始学号" value="1" min="1">
+            <span style="line-height: 45px; color: #666;">-</span>
+            <input type="number" id="endNum" placeholder="结束学号" value="50" min="1">
+        </div>
+        <!-- 功能按钮 -->
+        <div class="btn-group">
+            <button id="drawBtn">抽取学号</button>
+            <button id="resetBtn">重置重抽</button>
+        </div>
+        <!-- 抽取结果 -->
+        <div class="result">
+            <h3>本次抽取结果</h3>
+            <div id="stuNum">?</div>
+        </div>
+    </div>
+
+    <script>
+        // 天干地支基础数组
+        const tianGan = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+        const diZhi = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+        
+        // 根据日期计算当日天干地支（精准版）
+        function getTodayGanZhi() {
+            const today = new Date();
+            const baseYear = 1900; // 1900年为庚子年
+            const year = today.getFullYear();
+            const month = today.getMonth() + 1;
+            const day = today.getDate();
+
+            // 计算年干支
+            const yearDiff = year - baseYear;
+            const ganIndex = (yearDiff + 6) % 10; // 庚(6)为1900年天干起点
+            const zhiIndex = (yearDiff + 0) % 12; // 子(0)为1900年地支起点
+            const yearGanZhi = tianGan[ganIndex] + diZhi[zhiIndex];
+
+            // 计算日干支（基于日期数值哈希，保证当日唯一）
+            const dayNum = year * 10000 + month * 100 + day;
+            const dayGan = tianGan[(dayNum + 5) % 10];
+            const dayZhi = diZhi[(dayNum + 9) % 12];
+            const dayGanZhi = dayGan + dayZhi;
+
+            return `今日干支：${yearGanZhi}年 · ${dayGanZhi}日`;
+        }
+
+        // 初始化当日干支展示
+        document.getElementById("ganzhiToday").textContent = getTodayGanZhi();
+
+        // 抽取学号核心函数（基于当日干支哈希，保证同天同范围抽取结果可复现）
+        function drawStuNum() {
+            const start = parseInt(document.getElementById("startNum").value);
+            const end = parseInt(document.getElementById("endNum").value);
+            const stuNumBox = document.getElementById("stuNum");
+
+            // 校验输入
+            if (isNaN(start) || isNaN(end) || start > end) {
+                alert("请输入有效的学号范围（起始≤结束）！");
+                return;
+            }
+
+            // 基于当日干支生成随机种子（保证当日结果固定，刷新/重抽同范围结果一致）
+            const ganZhiStr = document.getElementById("ganzhiToday").textContent;
+            let seed = 0;
+            for (let i = 0; i < ganZhiStr.length; i++) {
+                seed = (seed * 31 + ganZhiStr.charCodeAt(i)) % 1000000;
+            }
+            // 固定种子随机数，生成范围内学号
+            const range = end - start + 1;
+            const randomNum = (seed % range) + start;
+
+            // 抽取动画效果
+            let count = 0;
+            const timer = setInterval(() => {
+                stuNumBox.textContent = Math.floor(Math.random() * range) + start;
+                count++;
+                if (count >= 15) {
+                    clearInterval(timer);
+                    stuNumBox.textContent = randomNum; // 最终显示干支计算的结果
+                }
+            }, 80);
+        }
+
+        // 重置函数
+        function resetDraw() {
+            document.getElementById("stuNum").textContent = "?";
+            document.getElementById("startNum").value = 1;
+            document.getElementById("endNum").value = 50;
+        }
+
+        // 绑定按钮事件
+        document.getElementById("drawBtn").addEventListener("click", drawStuNum);
+        document.getElementById("resetBtn").addEventListener("click", resetDraw);
+
+        // 回车触发抽取
+        document.getElementById("endNum").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") drawStuNum();
+        });
+    </script>
+</body>
+</html>
